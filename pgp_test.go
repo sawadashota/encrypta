@@ -2,6 +2,7 @@ package encrypta_test
 
 import (
 	"bytes"
+	"encoding/base64"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -105,6 +106,43 @@ func TestNewPublicKey(t *testing.T) {
 			_, err := encrypta.NewPublicKey(c.args.key)
 			if (err != nil) != c.wantErr {
 				t.Errorf("NewPublicKey() error = %v, wantErr %v", err, c.wantErr)
+			}
+		})
+	}
+}
+
+func TestNewPublicKeyFromBase64Encoded(t *testing.T) {
+	type args struct {
+		base64EncodedKey string
+	}
+	cases := map[string]struct {
+		args    args
+		wantErr bool
+	}{
+		"base64 encoded encryption key": {
+			args: args{
+				base64EncodedKey: base64.StdEncoding.EncodeToString([]byte(encryptionPGPKey)),
+			},
+			wantErr: false,
+		},
+		"base64 encoded dummy text": {
+			args: args{
+				base64EncodedKey: base64.StdEncoding.EncodeToString([]byte("foobar")),
+			},
+			wantErr: true,
+		},
+		"plain text": {
+			args: args{
+				base64EncodedKey: "foobar",
+			},
+			wantErr: true,
+		},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, err := encrypta.NewPublicKeyFromBase64Encoded(c.args.base64EncodedKey)
+			if (err != nil) != c.wantErr {
+				t.Errorf("NewPublicKeyFromBase64Encoded() error = %v, wantErr %v", err, c.wantErr)
 			}
 		})
 	}

@@ -91,6 +91,15 @@ func encryptionKey(bundle []byte) ([]byte, error) {
 	return serializedEntity.Bytes(), nil
 }
 
+// NewPublicKeyFromBase64Encoded returns new EncryptionKey from base64 encoded key
+func NewPublicKeyFromBase64Encoded(base64EncodedKey string) (EncryptionKey, error) {
+	b, err := base64.StdEncoding.DecodeString(base64EncodedKey)
+	if err != nil {
+		return nil, err
+	}
+	return NewPublicKey(bytes.NewBuffer(b))
+}
+
 // httpClient for fetch public key from URL
 // This might be changed in some cases
 var httpClient = http.DefaultClient
