@@ -15,6 +15,49 @@ import (
 // pgpEncryptionKey is OpenPGP public key
 type pgpEncryptionKey []byte
 
+// Encrypt text using given PGP public key
+func (pk *pgpEncryptionKey) Encrypt(value []byte) (Encrypted, error) {
+	encryptionKey, err := pk.base64EncodedEncryptionKey()
+	if err != nil {
+		return nil, errorsWrap(err)
+	}
+
+	entity, err := getEntity(encryptionKey)
+	if err != nil {
+		return nil, errorsWrap(err)
+	}
+
+	ctBuf := bytes.NewBuffer(nil)
+	pt, err := openpgp.Encrypt(ctBuf, []*openpgp.Entity{entity}, nil, nil, nil)
+	if err != nil {
+		return nil, errorsWrap(err)
+	}
+	_, err = pt.Write(value)
+	if err != nil {
+		return nil, errorsWrap(err)
+	}
+	pt.Close()
+
+	return ctBuf.Bytes(), nil
+}
+
+func (pk *pgpEncryptionKey) base64EncodedEncryptionKey() (string, error) {
+	return base64.StdEncoding.EncodeToString(*pk), nil
+}
+
+func getEntity(encryptionKey string) (*openpgp.Entity, error) {
+	data, err := base64.StdEncoding.DecodeString(encryptionKey)
+	if err != nil {
+		return nil, err
+	}
+	entity, err := openpgp.ReadEntity(packet.NewReader(bytes.NewBuffer(data)))
+	if err != nil {
+		return nil, err
+	}
+
+	return entity, nil
+}
+
 // NewPublicKey returns new pgpEncryptionKey instance from given key
 func NewPublicKey(key io.Reader) (EncryptionKey, error) {
 	rawKey, err := ioutil.ReadAll(key)
@@ -93,47 +136,4 @@ func NewPublicKeyFromURL(publicKeyURL string, opts ...Option) (EncryptionKey, er
 func NewPublicKeyFromKeybase(username string, opts ...Option) (EncryptionKey, error) {
 	publicKeyURL := fmt.Sprintf("https://keybase.io/%s/pgp_keys.asc", username)
 	return NewPublicKeyFromURL(publicKeyURL, opts...)
-}
-
-// Encrypt text using given PGP public key
-func (pk *pgpEncryptionKey) Encrypt(value []byte) (Encrypted, error) {
-	encryptionKey, err := pk.base64EncodedEncryptionKey()
-	if err != nil {
-		return nil, errorsWrap(err)
-	}
-
-	entity, err := getEntity(encryptionKey)
-	if err != nil {
-		return nil, errorsWrap(err)
-	}
-
-	ctBuf := bytes.NewBuffer(nil)
-	pt, err := openpgp.Encrypt(ctBuf, []*openpgp.Entity{entity}, nil, nil, nil)
-	if err != nil {
-		return nil, errorsWrap(err)
-	}
-	_, err = pt.Write(value)
-	if err != nil {
-		return nil, errorsWrap(err)
-	}
-	pt.Close()
-
-	return ctBuf.Bytes(), nil
-}
-
-func (pk *pgpEncryptionKey) base64EncodedEncryptionKey() (string, error) {
-	return base64.StdEncoding.EncodeToString(*pk), nil
-}
-
-func getEntity(encryptionKey string) (*openpgp.Entity, error) {
-	data, err := base64.StdEncoding.DecodeString(encryptionKey)
-	if err != nil {
-		return nil, err
-	}
-	entity, err := openpgp.ReadEntity(packet.NewReader(bytes.NewBuffer(data)))
-	if err != nil {
-		return nil, err
-	}
-
-	return entity, nil
 }
