@@ -19,24 +19,24 @@ type pgpEncryptionKey []byte
 func (pk *pgpEncryptionKey) Encrypt(value []byte) (Encrypted, error) {
 	encryptionKey, err := pk.base64EncodedEncryptionKey()
 	if err != nil {
-		return nil, errorsWrap(err)
+		return nil, err
 	}
 
 	entity, err := getEntity(encryptionKey)
 	if err != nil {
-		return nil, errorsWrap(err)
+		return nil, err
 	}
 
 	ctBuf := bytes.NewBuffer(nil)
 	pt, err := openpgp.Encrypt(ctBuf, []*openpgp.Entity{entity}, nil, nil, nil)
 	if err != nil {
-		return nil, errorsWrap(err)
+		return nil, err
 	}
 	_, err = pt.Write(value)
 	if err != nil {
-		return nil, errorsWrap(err)
+		return nil, err
 	}
-	pt.Close()
+	defer pt.Close()
 
 	return ctBuf.Bytes(), nil
 }
@@ -62,12 +62,12 @@ func getEntity(encryptionKey string) (*openpgp.Entity, error) {
 func NewPublicKey(key io.Reader) (EncryptionKey, error) {
 	rawKey, err := ioutil.ReadAll(key)
 	if err != nil {
-		return nil, errorsWrap(err)
+		return nil, err
 	}
 
 	ek, err := encryptionKey(rawKey)
 	if err != nil {
-		return nil, errorsWrap(err)
+		return nil, err
 	}
 
 	pk := pgpEncryptionKey(ek)
@@ -79,13 +79,13 @@ func encryptionKey(bundle []byte) ([]byte, error) {
 	entityList, err := openpgp.ReadArmoredKeyRing(keyReader)
 
 	if err != nil {
-		return nil, errorsWrap(err)
+		return nil, err
 	}
 
 	serializedEntity := bytes.NewBuffer(nil)
 	err = entityList[0].Serialize(serializedEntity)
 	if err != nil {
-		return nil, errorsWrap(err)
+		return nil, err
 	}
 
 	return serializedEntity.Bytes(), nil
@@ -123,18 +123,18 @@ func NewPublicKeyFromURL(publicKeyURL string, opts ...Option) (EncryptionKey, er
 
 	req, err := http.NewRequest("GET", publicKeyURL, nil)
 	if err != nil {
-		return nil, errorsWrap(err)
+		return nil, err
 	}
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return nil, errorsWrap(err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errorsWrap(err)
+		return nil, err
 	}
 
 	key := bytes.NewBuffer(body)

@@ -21,13 +21,7 @@ package encrypta
 
 import (
 	"encoding/base64"
-
-	"github.com/pkg/errors"
 )
-
-func errorsWrap(err error) error {
-	return errors.Wrap(err, "encrypta")
-}
 
 // Encrypted .
 type Encrypted []byte
