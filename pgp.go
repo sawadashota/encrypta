@@ -7,15 +7,14 @@ import (
 	"io"
 	"net/http"
 
-	"golang.org/x/crypto/openpgp"
-	"golang.org/x/crypto/openpgp/packet"
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
 )
 
 // pgpEncryptionKey is OpenPGP public key
 type pgpEncryptionKey []byte
 
 // Encrypt text using given PGP public key
-func (pk *pgpEncryptionKey) Encrypt(value []byte) (Encrypted, error) {
+func (pk pgpEncryptionKey) Encrypt(value []byte) (Encrypted, error) {
 	encryptionKey, err := pk.base64EncodedEncryptionKey()
 	if err != nil {
 		return nil, err
@@ -26,35 +25,34 @@ func (pk *pgpEncryptionKey) Encrypt(value []byte) (Encrypted, error) {
 		return nil, err
 	}
 
-	ctBuf := bytes.NewBuffer(nil)
-	pt, err := openpgp.Encrypt(ctBuf, []*openpgp.Entity{entity}, nil, nil, nil)
+	keyRing, err := crypto.NewKeyRing(entity)
 	if err != nil {
 		return nil, err
 	}
-	_, err = pt.Write(value)
+
+	message := crypto.NewPlainMessage(value)
+	encryptedMessage, err := keyRing.Encrypt(message, nil)
 	if err != nil {
 		return nil, err
 	}
-	defer pt.Close()
 
-	return ctBuf.Bytes(), nil
+	s, err := encryptedMessage.GetArmored()
+	if err != nil {
+		return nil, err
+	}
+	return Encrypted(s), nil
 }
 
-func (pk *pgpEncryptionKey) base64EncodedEncryptionKey() (string, error) {
-	return base64.StdEncoding.EncodeToString(*pk), nil
+func (pk pgpEncryptionKey) base64EncodedEncryptionKey() (string, error) {
+	return base64.StdEncoding.EncodeToString(pk), nil
 }
 
-func getEntity(encryptionKey string) (*openpgp.Entity, error) {
+func getEntity(encryptionKey string) (*crypto.Key, error) {
 	data, err := base64.StdEncoding.DecodeString(encryptionKey)
 	if err != nil {
 		return nil, err
 	}
-	entity, err := openpgp.ReadEntity(packet.NewReader(bytes.NewBuffer(data)))
-	if err != nil {
-		return nil, err
-	}
-
-	return entity, nil
+	return crypto.NewKeyFromArmored(string(data))
 }
 
 // NewPublicKey returns new pgpEncryptionKey instance from given key
@@ -70,24 +68,19 @@ func NewPublicKey(key io.Reader) (EncryptionKey, error) {
 	}
 
 	pk := pgpEncryptionKey(ek)
-	return &pk, nil
+	return pk, nil
 }
 
 func encryptionKey(bundle []byte) ([]byte, error) {
-	keyReader := bytes.NewReader(bundle)
-	entityList, err := openpgp.ReadArmoredKeyRing(keyReader)
-
+	keyObj, err := crypto.NewKeyFromArmored(string(bundle))
 	if err != nil {
 		return nil, err
 	}
-
-	serializedEntity := bytes.NewBuffer(nil)
-	err = entityList[0].Serialize(serializedEntity)
+	serializedEntity, err := keyObj.Armor()
 	if err != nil {
 		return nil, err
 	}
-
-	return serializedEntity.Bytes(), nil
+	return []byte(serializedEntity), nil
 }
 
 // NewPublicKeyFromBase64Encoded returns new EncryptionKey from base64 encoded key
