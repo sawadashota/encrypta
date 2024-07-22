@@ -3,8 +3,6 @@ Encrypta
 
 [![GoDoc](https://godoc.org/github.com/sawadashota/encrypta?status.svg)](https://godoc.org/github.com/sawadashota/encrypta)
 [![codecov](https://codecov.io/gh/sawadashota/encrypta/branch/master/graph/badge.svg)](https://codecov.io/gh/sawadashota/encrypta)
-[![Go Report Card](https://goreportcard.com/badge/github.com/sawadashota/encrypta)](https://goreportcard.com/report/github.com/sawadashota/encrypta)
-[![GolangCI](https://golangci.com/badges/github.com/sawadashota/encrypta.svg)](https://golangci.com)
 
 [Keybase](https://keybase.io) friendly, encrypts text by public key.
 
