@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"testing"
 
@@ -156,7 +155,7 @@ func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req), nil
 }
 
-//newTestClient returns *http.Client with Transport replaced to avoid making real calls
+// newTestClient returns *http.Client with Transport replaced to avoid making real calls
 func newTestClient(fn RoundTripFunc) *http.Client {
 	return &http.Client{
 		Transport: RoundTripFunc(fn),
@@ -171,7 +170,7 @@ func client(t *testing.T, respBody string) *http.Client {
 	return newTestClient(func(req *http.Request) *http.Response {
 		return &http.Response{
 			StatusCode: http.StatusOK,
-			Body:       ioutil.NopCloser(bytes.NewBuffer([]byte(respBody))),
+			Body:       io.NopCloser(bytes.NewBuffer([]byte(respBody))),
 			Header:     make(http.Header),
 		}
 	})

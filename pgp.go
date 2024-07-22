@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"golang.org/x/crypto/openpgp"
@@ -60,7 +59,7 @@ func getEntity(encryptionKey string) (*openpgp.Entity, error) {
 
 // NewPublicKey returns new pgpEncryptionKey instance from given key
 func NewPublicKey(key io.Reader) (EncryptionKey, error) {
-	rawKey, err := ioutil.ReadAll(key)
+	rawKey, err := io.ReadAll(key)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +131,7 @@ func NewPublicKeyFromURL(publicKeyURL string, opts ...Option) (EncryptionKey, er
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
